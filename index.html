@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>텍스트 이미지 변환기</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
-    <!--    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">-->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         .theme-toggle {
@@ -27,7 +26,7 @@
         }
 
         .form-range::-webkit-slider-thumb {
-            background: #0d6efd; /* Bootstrap primary color */
+            background: #0d6efd;
         }
 
         .slider-value {
@@ -40,12 +39,16 @@
             right: 1rem;
             bottom: -1.5rem;
             font-size: 0.875rem;
-            color: #6c757d; /* Bootstrap secondary color */
+            color: #6c757d;
         }
 
         .input-wrapper {
             position: relative;
             margin-bottom: 2rem;
+        }
+
+        #previewContainer img {
+            transition: max-width 0.3s ease;
         }
     </style>
 </head>
@@ -104,22 +107,32 @@
                                min="1" max="4" step="0.5" value="2">
                     </div>
 
+                    <div class="mb-4">
+                        <label for="imageWidth" class="form-label d-flex justify-content-between">
+                            이미지 폭 조절
+                            <span class="badge bg-primary slider-value" id="imageWidthValue">100%</span>
+                        </label>
+                        <input type="range" class="form-range" id="imageWidth"
+                               min="10" max="100" value="100">
+                    </div>
+
                     <div class="text-center">
-                        <button onclick="convertToImage()" class="btn btn-primary btn-lg px-5">
-                            <i class="bi bi-image me-2"></i>이미지로 변환
+                        <button onclick="generateImage(true)" class="btn btn-primary btn-lg px-5">
+                            <i class="bi bi-image me-2"></i>이미지 다운로드
                         </button>
                     </div>
 
                     <div class="mt-4">
                         <div class="preview-container text-center" id="previewContainer">
-                            <!-- 미리보기가 여기에 표시됩니다 -->
+                            <p class="text-muted mb-2">미리보기:</p>
+                            <img id="previewImage" class="img-fluid border" style="max-width: 100%;" alt="preview">
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="mt-3 text-center text-muted small">
-                <p>이미지는 자동으로 다운로드됩니다.</p>
+                <p>실시간으로 미리보기가 업데이트됩니다.</p>
             </div>
         </div>
     </div>
@@ -127,128 +140,147 @@
 
 <canvas id="canvas" style="display: none;"></canvas>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"
-        integrity="sha512-7Pi/otdlbbCR+LnW+F7PwFcSDJOuUJB3OxtEHbg4vSMvzvJjde4Po1v4BR9Gdc9aXNUNFVUY+SK51wWT8WF0Gg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
 
 <script>
-    // 다크모드 토글
+    // DOM 요소 선택
     const themeToggle = document.getElementById('themeToggle');
     const icon = themeToggle.querySelector('i');
-    const html = document.documentElement;
+    const textArea = document.getElementById('text');
+    const charCountSpan = document.getElementById('charCount');
+    const byteCountSpan = document.getElementById('byteCount');
+    const fontSizeSlider = document.getElementById('fontSize');
+    const qualitySlider = document.getElementById('quality');
+    const imageWidthSlider = document.getElementById('imageWidth');
+    const previewImage = document.getElementById('previewImage');
 
+    // 테마 토글
     function toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-bs-theme');
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-bs-theme', newTheme);
         icon.className = newTheme === 'light' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
-        localStorage.setItem('theme', newTheme);
+        updatePreview();
     }
 
-    // 저장된 테마 적용
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        document.documentElement.setAttribute('data-bs-theme', savedTheme);
-        icon.className = savedTheme === 'light' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
-    }
+    // 기본 테마 설정 (light)
+    document.documentElement.setAttribute('data-bs-theme', 'light');
+    icon.className = 'bi bi-sun-fill';
 
     themeToggle.addEventListener('click', toggleTheme);
 
-    // 글자수 카운터
-    const textArea = document.getElementById('text');
-    const charCountSpan = document.getElementById('charCount');
-    const byteCountSpan = document.getElementById('byteCount');
-
+    // 글자수 세기 함수들
     function countCharacters(str) {
         return str.length;
     }
 
     function countBytes(str) {
-        return new Blob([str]).size;
+        const encoder = new TextEncoder();
+        return encoder.encode(str).length;
     }
 
+    // 실시간 미리보기 업데이트 (디바운스 적용)
+    const updatePreview = _.debounce(function () {
+        generateImage(false);
+    }, 300);
+
+    // 이벤트 리스너들
     textArea.addEventListener('input', function () {
         const text = this.value;
-        charCountSpan.textContent = countCharacters(text);
-        byteCountSpan.textContent = countBytes(text);
+        charCountSpan.textContent = countCharacters(text).toString();
+        byteCountSpan.textContent = countBytes(text).toString();
+        updatePreview();
     });
 
-    // 슬라이더 값 표시 업데이트
-    document.getElementById('fontSize').oninput = function () {
+    fontSizeSlider.addEventListener('input', function () {
         document.getElementById('fontSizeValue').textContent = this.value + 'px';
-    };
-    document.getElementById('quality').oninput = function () {
-        document.getElementById('qualityValue').textContent = this.value + 'x';
-    };
+        updatePreview();
+    });
 
-    function convertToImage() {
-        const text = document.getElementById('text').value;
+    qualitySlider.addEventListener('input', function () {
+        document.getElementById('qualityValue').textContent = this.value + 'x';
+        updatePreview();
+    });
+
+    imageWidthSlider.addEventListener('input', function () {
+        const width = this.value;
+        document.getElementById('imageWidthValue').textContent = width + '%';
+        previewImage.style.maxWidth = width + '%';
+        updatePreview();
+    });
+
+    document.getElementById('font').addEventListener('change', updatePreview);
+
+    // 이미지 생성 함수
+    function generateImage(download = false) {
+        const text = textArea.value;
         if (!text) {
-            alert('텍스트를 입력해주세요!');
+            previewImage.style.display = 'none';
             return;
         }
 
-        const fontSize = document.getElementById('fontSize').value;
+        const fontSize = parseInt(fontSizeSlider.value);
         const fontFamily = document.getElementById('font').value;
-        const quality = document.getElementById('quality').value;
+        const quality = parseFloat(qualitySlider.value);
+        const imageWidthPercent = parseInt(imageWidthSlider.value);
 
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
         // 텍스트를 줄바꿈으로 분리
-        const lines = text.split('\n');
+        const lines = text.split('\n').map(line => String(line));
 
         // 각 줄의 너비 측정
         ctx.font = `${fontSize}px ${fontFamily}`;
         let maxWidth = 0;
-        lines.forEach(line => {
+        lines.forEach((line) => {
             const metrics = ctx.measureText(line);
             maxWidth = Math.max(maxWidth, metrics.width);
         });
 
-        // 캔버스 크기 설정 (여백 포함)
+        // 이미지 가로폭 조절 적용
+        maxWidth = maxWidth * (imageWidthPercent / 100);
+
+        // 캔버스 크기 설정
         const width = maxWidth + 40;
         const height = (fontSize * 1.5 * lines.length) + 40;
 
-        // 고해상도를 위한 캔버스 크기 설정
         canvas.width = width * quality;
         canvas.height = height * quality;
 
-        // 고해상도 스케일링
         ctx.scale(quality, quality);
 
-        // 배경 설정
         ctx.fillStyle = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#212529' : 'white';
         ctx.fillRect(0, 0, width, height);
 
-        // 텍스트 렌더링 설정
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
         ctx.font = `${fontSize}px ${fontFamily}`;
         ctx.fillStyle = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'white' : 'black';
 
-        // 안티앨리어싱 활성화
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
-        // 각 줄 그리기
         lines.forEach((line, index) => {
             const y = (fontSize * 1.5 * (index + 0.5)) + 20;
             ctx.fillText(line, width / 2, y);
         });
 
-        // 이미지 다운로드
         const image = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = 'text-image.png';
-        link.href = image;
-        link.click();
+        previewImage.src = image;
+        previewImage.style.display = 'inline-block';
 
-        // 미리보기 업데이트
-        const previewContainer = document.getElementById('previewContainer');
-        previewContainer.innerHTML = '<p class="text-muted mb-2">미리보기:</p>' +
-            `<img src="${image}" class="img-fluid border" style="max-width: 100%;" alt="preview_image">`;
+        if (download) {
+            const link = document.createElement('a');
+            link.download = 'text-image.png';
+            link.href = image;
+            link.click();
+        }
     }
+
+    // 초기 미리보기
+    updatePreview();
 </script>
 </body>
 </html>
