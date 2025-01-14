@@ -6,7 +6,18 @@
     <title>텍스트 이미지 변환기</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Pretendard 폰트 추가 -->
+    <link rel="stylesheet" as="style" crossorigin
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
+
     <style>
+        /* 기본 폰트 설정 */
+        body {
+            font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+            system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo",
+            "Noto Sans KR", "Malgun Gothic", sans-serif;
+        }
+
         .theme-toggle {
             position: fixed;
             top: 1rem;
@@ -54,11 +65,13 @@
 </head>
 <body>
 <div class="theme-toggle">
+    <!-- /** 외각선 버튼 클래스 **/ -->
     <button class="btn btn-outline-primary" id="themeToggle">
         <i class="bi bi-sun-fill"></i>
     </button>
 </div>
 
+<!-- /** 메인 화면 **/ -->
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
@@ -79,6 +92,7 @@
                     <div class="mb-4">
                         <label for="font" class="form-label">폰트 선택</label>
                         <select class="form-select" id="font">
+                            <option value="Pretendard Variable">Pretendard</option>
                             <option value="Arial">Arial</option>
                             <option value="Times New Roman">Times New Roman</option>
                             <option value="Helvetica">Helvetica</option>
@@ -117,11 +131,12 @@
                     </div>
 
                     <div class="text-center">
+                        <!-- 다운로드 버튼 -->
                         <button onclick="generateImage(true)" class="btn btn-primary btn-lg px-5">
                             <i class="bi bi-image me-2"></i>이미지 다운로드
                         </button>
                     </div>
-
+                    <!-- 미리보기 썸네일 기본값 추가 필요-->
                     <div class="mt-4">
                         <div class="preview-container text-center" id="previewContainer">
                             <p class="text-muted mb-2">미리보기:</p>
@@ -138,15 +153,18 @@
     </div>
 </div>
 
+<!-- 캔버스 요소 (이미지 생성용) -->
 <canvas id="canvas" style="display: none;"></canvas>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
-
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"
+        integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YpMyCU245etK3g/2ARYbPK9Ub18eG+ljU96qKRCWh+quCY7yefSmlkQw1ANQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
     // DOM 요소 선택
-    const themeToggle = document.getElementById('themeToggle');
-    const icon = themeToggle.querySelector('i');
+    const themeToggle = document.getElementById('themeToggle'); // 라이트 / 다크 테마 전환 버튼
+    const icon = themeToggle.querySelector('i'); // 아이콘 요소
     const textArea = document.getElementById('text');
     const charCountSpan = document.getElementById('charCount');
     const byteCountSpan = document.getElementById('byteCount');
@@ -155,8 +173,13 @@
     const imageWidthSlider = document.getElementById('imageWidth');
     const previewImage = document.getElementById('previewImage');
 
-    // 테마 토글
+    /**
+     * @description 테마 전환 함수
+     * @function toggleTheme
+     * @returns {void}
+     */
     function toggleTheme() {
+        // https://getbootstrap.com/docs/5.3/customize/color-modes/
         const currentTheme = document.documentElement.getAttribute('data-bs-theme');
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-bs-theme', newTheme);
@@ -164,28 +187,49 @@
         updatePreview();
     }
 
+
     // 기본 테마 설정 (light)
     document.documentElement.setAttribute('data-bs-theme', 'light');
+
+    // https://icons.getbootstrap.com/icons/sun-fill/
     icon.className = 'bi bi-sun-fill';
 
+    // 테마 전환 버튼 클릭시 toggleTheme 함수 실행
     themeToggle.addEventListener('click', toggleTheme);
 
-    // 글자수 세기 함수들
-    function countCharacters(str) {
+    /**
+     * @description 문자열(글자수) 길이 계산 함수
+     * @function countCharacters
+     * @param {string} str - 입력 문자열
+     * @returns {number} 문자열 길이
+     */    function countCharacters(str) {
         return str.length;
     }
 
+    /**
+     * @description 바이트 수 계산 함수
+     * @function countBytes
+     * @param {string} str - 입력 문자열
+     * @returns {number} 바이트 수
+     */
     function countBytes(str) {
         const encoder = new TextEncoder();
         return encoder.encode(str).length;
     }
 
-    // 실시간 미리보기 업데이트 (디바운스 적용)
+    // https://lodash.com/docs/4.17.15#debounce
+    /**
+     * @description Loadash 라이브러리의 debounce 함수를 사용하여 입력이 멈춘 후 300ms 후에 미리보기 업데이트
+     * @function updatePreview
+     * @debounce 300ms
+     */
     const updatePreview = _.debounce(function () {
         generateImage(false);
     }, 300);
 
-    // 이벤트 리스너들
+
+    // ====================================================================================================
+    // 텍스트 입력시 글자수, 바이트수 세기 및 미리보기 업데이트
     textArea.addEventListener('input', function () {
         const text = this.value;
         charCountSpan.textContent = countCharacters(text).toString();
@@ -193,6 +237,7 @@
         updatePreview();
     });
 
+    // 폰트 크기, 이미지 품질, 이미지 폭 조절시 미리보기 업데이트
     fontSizeSlider.addEventListener('input', function () {
         document.getElementById('fontSizeValue').textContent = this.value + 'px';
         updatePreview();
@@ -210,76 +255,92 @@
         updatePreview();
     });
 
+    // 폰트 선택시 미리보기 업데이트
     document.getElementById('font').addEventListener('change', updatePreview);
 
-    // 이미지 생성 함수
+    // ====================================================================================================
+
+    /**
+     * @description 이미지 생성 메인 함수
+     * @function generateImage
+     * @param {boolean} download - 다운로드 여부
+     * @returns {void}
+     */
     function generateImage(download = false) {
-        const text = textArea.value;
-        if (!text) {
-            previewImage.style.display = 'none';
-            return;
+        try {
+
+
+            const text = textArea.value;
+
+            if (!text) { // 텍스트가 없을 경우 미리보기 숨기기
+                previewImage.style.display = 'none';
+                return;
+            }
+
+            // 사용자 입력값 가져오기
+            const fontSize = parseInt(fontSizeSlider.value);
+            const fontFamily = document.getElementById('font').value;
+            const quality = parseFloat(qualitySlider.value);
+            const imageWidthPercent = parseInt(imageWidthSlider.value);
+
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // 텍스트를 줄바꿈으로 분리
+            const lines = text.split('\n').map(line => String(line));
+
+            // 각 줄의 너비 측정
+            ctx.font = `${fontSize}px ${fontFamily}`;
+            let maxWidth = 0;
+            lines.forEach((line) => {
+                const metrics = ctx.measureText(line);
+                maxWidth = Math.max(maxWidth, metrics.width);
+            });
+
+            // 이미지 가로폭 조절 적용
+            maxWidth = maxWidth * (imageWidthPercent / 100);
+
+            // 캔버스 크기 설정
+            const width = maxWidth + 40;
+            const height = (fontSize * 1.5 * lines.length) + 40;
+
+            canvas.width = width * quality;
+            canvas.height = height * quality;
+
+            ctx.scale(quality, quality);
+
+            ctx.fillStyle = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#212529' : 'white';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            ctx.font = `${fontSize}px ${fontFamily}`;
+            ctx.fillStyle = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'white' : 'black';
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            lines.forEach((line, index) => {
+                const y = (fontSize * 1.5 * (index + 0.5)) + 20;
+                ctx.fillText(line, width / 2, y);
+            });
+
+            const image = canvas.toDataURL('image/png');
+            previewImage.src = image;
+            previewImage.style.display = 'inline-block';
+
+            if (download) {
+                const link = document.createElement('a');
+                link.download = 'text-image.png';
+                link.href = image;
+                link.click();
+            }
+        } catch (e) {
+            console.error("이미지 생성 실패:", e)
         }
+    } // generateImage
 
-        const fontSize = parseInt(fontSizeSlider.value);
-        const fontFamily = document.getElementById('font').value;
-        const quality = parseFloat(qualitySlider.value);
-        const imageWidthPercent = parseInt(imageWidthSlider.value);
-
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-
-        // 텍스트를 줄바꿈으로 분리
-        const lines = text.split('\n').map(line => String(line));
-
-        // 각 줄의 너비 측정
-        ctx.font = `${fontSize}px ${fontFamily}`;
-        let maxWidth = 0;
-        lines.forEach((line) => {
-            const metrics = ctx.measureText(line);
-            maxWidth = Math.max(maxWidth, metrics.width);
-        });
-
-        // 이미지 가로폭 조절 적용
-        maxWidth = maxWidth * (imageWidthPercent / 100);
-
-        // 캔버스 크기 설정
-        const width = maxWidth + 40;
-        const height = (fontSize * 1.5 * lines.length) + 40;
-
-        canvas.width = width * quality;
-        canvas.height = height * quality;
-
-        ctx.scale(quality, quality);
-
-        ctx.fillStyle = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#212529' : 'white';
-        ctx.fillRect(0, 0, width, height);
-
-        ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
-        ctx.font = `${fontSize}px ${fontFamily}`;
-        ctx.fillStyle = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'white' : 'black';
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-
-        lines.forEach((line, index) => {
-            const y = (fontSize * 1.5 * (index + 0.5)) + 20;
-            ctx.fillText(line, width / 2, y);
-        });
-
-        const image = canvas.toDataURL('image/png');
-        previewImage.src = image;
-        previewImage.style.display = 'inline-block';
-
-        if (download) {
-            const link = document.createElement('a');
-            link.download = 'text-image.png';
-            link.href = image;
-            link.click();
-        }
-    }
-
-    // 초기 미리보기
+    // 초기화
     updatePreview();
 </script>
 </body>
