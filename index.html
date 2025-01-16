@@ -61,6 +61,26 @@
         #previewContainer img {
             transition: max-width 0.3s ease;
         }
+
+
+        /* 새로운 스타일 */
+
+        .text-align-buttons {
+
+            display: flex;
+
+            gap: 0.5rem;
+
+        }
+
+
+        .text-align-buttons .btn.active {
+
+            background-color: #0d6efd;
+
+            color: white;
+
+        }
     </style>
 </head>
 <body>
@@ -88,6 +108,35 @@
                             (<span id="byteCount">0</span> 바이트)
                         </div>
                     </div>
+                    <!-- 텍스트 정렬 버튼 -->
+
+                    <div class="mb-4">
+
+                        <label class="form-label">텍스트 정렬</label>
+
+                        <div class="text-align-buttons">
+
+                            <button class="btn btn-outline-primary active" data-align="left">
+
+                                <i class="bi bi-text-left"></i>
+
+                            </button>
+
+                            <button class="btn btn-outline-primary" data-align="center">
+
+                                <i class="bi bi-text-center"></i>
+
+                            </button>
+
+                            <button class="btn btn-outline-primary" data-align="right">
+
+                                <i class="bi bi-text-right"></i>
+
+                            </button>
+
+                        </div>
+
+                    </div>
 
                     <div class="mb-4">
                         <label for="font" class="form-label">폰트 선택</label>
@@ -106,11 +155,12 @@
                     <div class="mb-4">
                         <label for="fontSize" class="form-label d-flex justify-content-between">
                             폰트 크기
-                            <span class="badge bg-primary slider-value" id="fontSizeValue">48px</span>
+                            <span class="badge bg-primary slider-value" id="fontSizeValue">36pt</span>
                         </label>
                         <input type="range" class="form-range" id="fontSize"
-                               min="12" max="120" value="48">
+                               min="9" max="90" value="36">
                     </div>
+
 
                     <div class="mb-4">
                         <label for="quality" class="form-label d-flex justify-content-between">
@@ -128,6 +178,28 @@
                         </label>
                         <input type="range" class="form-range" id="imageWidth"
                                min="10" max="100" value="100">
+                    </div>
+
+
+                    <!-- 압축률 슬라이더 -->
+                    <div class="mb-4">
+                        <label for="compression" class="form-label d-flex justify-content-between">
+                            압축률
+                            <span class="badge bg-primary slider-value" id="compressionValue">90%</span>
+                        </label>
+                        <input type="range" class="form-range" id="compression"
+                               min="10" max="100" value="90">
+                    </div>
+
+
+                    <!-- 이미지 포맷 선택 -->
+                    <div class="mb-4">
+                        <label for="imageFormat" class="form-label">이미지 포맷</label>
+                        <select class="form-select" id="imageFormat">
+                            <option value="image/png">PNG</option>
+                            <option value="image/jpeg">JPG</option>
+                            <option value="image/webp">WEBP</option>
+                        </select>
                     </div>
 
                     <div class="text-center">
@@ -157,7 +229,6 @@
 <canvas id="canvas" style="display: none;"></canvas>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"
         integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YpMyCU245etK3g/2ARYbPK9Ub18eG+ljU96qKRCWh+quCY7yefSmlkQw1ANQ=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -172,6 +243,24 @@
     const qualitySlider = document.getElementById('quality');
     const imageWidthSlider = document.getElementById('imageWidth');
     const previewImage = document.getElementById('previewImage');
+    const compressionSlider = document.getElementById('compression');
+    const imageFormatSelect = document.getElementById('imageFormat');
+    const alignButtons = document.querySelectorAll('.text-align-buttons button');
+
+
+    // 현재 텍스트 정렬 상태 저장
+    let currentTextAlign = 'left';
+
+
+    // 텍스트 정렬 버튼 이벤트
+    alignButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            alignButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            currentTextAlign = this.dataset.align;
+            updatePreview();
+        });
+    });
 
     /**
      * @description 테마 전환 함수
@@ -238,8 +327,9 @@
     });
 
     // 폰트 크기, 이미지 품질, 이미지 폭 조절시 미리보기 업데이트
+    // JavaScript 부분 수정
     fontSizeSlider.addEventListener('input', function () {
-        document.getElementById('fontSizeValue').textContent = this.value + 'px';
+        document.getElementById('fontSizeValue').textContent = this.value + 'pt';
         updatePreview();
     });
 
@@ -255,33 +345,35 @@
         updatePreview();
     });
 
+
+    compressionSlider.addEventListener('input', function () {
+        document.getElementById('compressionValue').textContent = this.value + '%';
+        updatePreview();
+    });
+
     // 폰트 선택시 미리보기 업데이트
     document.getElementById('font').addEventListener('change', updatePreview);
 
     // ====================================================================================================
 
-    /**
-     * @description 이미지 생성 메인 함수
-     * @function generateImage
-     * @param {boolean} download - 다운로드 여부
-     * @returns {void}
-     */
+
     function generateImage(download = false) {
         try {
-
-
             const text = textArea.value;
 
-            if (!text) { // 텍스트가 없을 경우 미리보기 숨기기
+            if (!text) {
                 previewImage.style.display = 'none';
                 return;
             }
 
             // 사용자 입력값 가져오기
-            const fontSize = parseInt(fontSizeSlider.value);
+            const fontSizePt = parseInt(fontSizeSlider.value);
+            const fontSizePx = Math.round(fontSizePt * 1.333); // pt를 px로 변환
             const fontFamily = document.getElementById('font').value;
             const quality = parseFloat(qualitySlider.value);
             const imageWidthPercent = parseInt(imageWidthSlider.value);
+            const compression = parseInt(compressionSlider.value) / 100;
+            const imageFormat = imageFormatSelect.value;
 
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
@@ -290,55 +382,105 @@
             const lines = text.split('\n').map(line => String(line));
 
             // 각 줄의 너비 측정
-            ctx.font = `${fontSize}px ${fontFamily}`;
+            ctx.font = `${fontSizePx}px ${fontFamily}`;
             let maxWidth = 0;
             lines.forEach((line) => {
                 const metrics = ctx.measureText(line);
                 maxWidth = Math.max(maxWidth, metrics.width);
             });
 
+
             // 이미지 가로폭 조절 적용
             maxWidth = maxWidth * (imageWidthPercent / 100);
 
             // 캔버스 크기 설정
             const width = maxWidth + 40;
-            const height = (fontSize * 1.5 * lines.length) + 40;
+            const height = (fontSizePx * 1.5 * lines.length) + 40;
 
             canvas.width = width * quality;
             canvas.height = height * quality;
 
             ctx.scale(quality, quality);
 
+            // 배경색 설정
             ctx.fillStyle = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#212529' : 'white';
             ctx.fillRect(0, 0, width, height);
 
+            // 텍스트 스타일 설정
             ctx.textBaseline = 'middle';
-            ctx.textAlign = 'center';
-            ctx.font = `${fontSize}px ${fontFamily}`;
+            ctx.textAlign = currentTextAlign;
+            ctx.font = `${fontSizePx}px ${fontFamily}`;
             ctx.fillStyle = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'white' : 'black';
-
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
 
+
+            // 텍스트 정렬에 따른 x 좌표 설정
+            let xPosition;
+            switch (currentTextAlign) {
+                case 'left':
+                    xPosition = 20;
+                    break;
+                case 'center':
+                    xPosition = width / 2;
+                    break;
+                case 'right':
+                    xPosition = width - 20;
+                    break;
+                default:
+                    xPosition = 20;
+            }
+
+            // 텍스트 그리기 (텍스트 정렬에 따른 위치 조정)
             lines.forEach((line, index) => {
-                const y = (fontSize * 1.5 * (index + 0.5)) + 20;
-                ctx.fillText(line, width / 2, y);
+                const y = (fontSizePx * 1.5 * (index + 0.5)) + 20;
+                let x;
+                switch (currentTextAlign) {
+                    case 'left':
+                        x = 20;
+                        break;
+                    case 'center':
+                        x = width / 2;
+                        break;
+                    case 'right':
+                        x = width - 20;
+                        break;
+                    default:
+                        x = 20;
+                }
+                ctx.fillText(line, x, y);
             });
 
-            const image = canvas.toDataURL('image/png');
-            previewImage.src = image;
-            previewImage.style.display = 'inline-block';
 
+            // 이미지 포맷과 품질 설정에 따른 DataURL 생성
+            let imageDataUrl;
+            if (imageFormat === 'image/jpeg') {
+                imageDataUrl = canvas.toDataURL('image/jpeg', compression);
+            } else if (imageFormat === 'image/webp') {
+                imageDataUrl = canvas.toDataURL('image/webp', compression);
+            } else {
+                imageDataUrl = canvas.toDataURL('image/png');
+            }
+
+
+            // 미리보기 업데이트
+            previewImage.src = imageDataUrl;
+            previewImage.style.display = 'inline-block';
+            ;
+
+            // 다운로드 처리
             if (download) {
                 const link = document.createElement('a');
-                link.download = 'text-image.png';
-                link.href = image;
+                const fileExtension = imageFormat.split('/')[1];
+                link.download = `text-image.${fileExtension}`;
+                link.href = imageDataUrl;
                 link.click();
             }
+
         } catch (e) {
-            console.error("이미지 생성 실패:", e)
+            console.error("이미지 생성 실패:", e);
         }
-    } // generateImage
+    }
 
     // 초기화
     updatePreview();

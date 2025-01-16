@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d89a6c30-1f00-489d-8d14-5c7b025f00cd" name="변경" comment="전반적인 수정" />
+    <list default="true" id="d89a6c30-1f00-489d-8d14-5c7b025f00cd" name="변경" comment="전반적인 수정">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -47,8 +50,9 @@
     "JavaScript 디버그.index.html.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "<알 수 없음>",
-    "last_opened_file_path": "Z:/project/javascript_basic",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/dev/project/ImageLOL",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -95,7 +99,12 @@
       <workItem from="1736677536063" duration="726000" />
       <workItem from="1736765755979" duration="3505000" />
       <workItem from="1736769454901" duration="1107000" />
-      <workItem from="1736815566047" duration="3192000" />
+      <workItem from="1736815566047" duration="3400000" />
+      <workItem from="1736827515951" duration="1847000" />
+      <workItem from="1736829409728" duration="1170000" />
+      <workItem from="1736869918315" duration="1671000" />
+      <workItem from="1736876903536" duration="112000" />
+      <workItem from="1737036113268" duration="1620000" />
     </task>
     <task id="LOCAL-00001" summary="add">
       <option name="closed" value="true" />
